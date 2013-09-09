@@ -1,0 +1,5 @@
+
+*The Little Schemer*
+
+This repository contains all the code examples of the book /The Little Schemer/ 4th
+edition.
