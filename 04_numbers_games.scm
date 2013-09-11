@@ -130,15 +130,15 @@
      (else #t))))
 
 
-(define expt
+(define ^
   (lambda (n m)
     (cond
      ((zero? m) 1)
-     (else (x n (expt n (sub1 m)))))))
+     (else (x n (^ n (sub1 m)))))))
 
-(expt 1 1)  ; 1
-(expt 2 3)  ; 8
-(expt 5 3)  ; 125
+(^ 1 1)  ; 1
+(^ 2 3)  ; 8
+(^ 5 3)  ; 125
 
 (define quotient
   (lambda (n m)

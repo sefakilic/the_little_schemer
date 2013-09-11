@@ -199,3 +199,158 @@
 (and (atom? (car '(pizza (tastes good))))
      (eq? (car '(pizza (tastes good))) 'pizza))          ; #t
 
+
+(define eqlist?
+  (lambda (l1 l2)
+    (cond
+     ((and (null? l1) (null? l2)) #t)
+     ((or (null? l1) (null? l2)) #f)
+     ((and (atom? (car l1)) (atom? (car l2)))
+      (and (eq? (car l1) (car l2)) (eqlist? (cdr l1) (cdr l2))))
+     ((or (atom? (car l1)) (atom? (car l2))) #f)
+     (else (and (eqlist? (car l1) (car l2)) (eqlist? (cdr l1) (cdr l2)))))))
+
+(eqlist? '(strawberry ice cream) '(strawberry ice cream))  ; #t
+(eqlist? '(strawberry ice cream) '(strawberry cream ice))  ; #f
+(eqlist? '(banana ((split))) '((banana) (split)))          ; #f
+(eqlist? '(beef ((sausage)) (and (soda)))
+         '(beef ((salami)) (and (soda))))                  ; #f
+(eqlist? '(beef ((sausage)) (and (soda)))
+         '(beef ((sausage)) (and (soda))))                 ; #t
+
+
+; given two s-expressions, check if they are equal
+(define equal?
+  (lambda (s1 s2)
+    (cond
+     ((and (atom? s1) (atom? s2)) (eq? s1 s2))
+     ((atom? s1) #f)
+     ((atom? s2) #f)
+     (else (eqlist? s1 s2)))))
+
+; rewrite eqlist? using equal?
+(define eqlist?
+  (lambda (l1 l2)
+    (cond
+     ((and (null? l1) (null? l2)) #t)
+     ((or (null? l1) (null? l2)) #f)
+     (else
+      (and (equal? (car l1) (car l2)) (eqlist? (cdr l1) (cdr l2)))))))
+
+; The sixth commandment
+; Simplify only after the function is correct.
+
+; rember after we replace lat by a list l of s-expressions and
+; a by any S-expression.
+(define rember
+  (lambda (s l)
+    (cond
+     ((null? l) '())
+     ((equal? (car l) s) (cdr l))
+     (else (cons (car l) (rember s (cdr l)))))))
+
+
+
+; numbered
+(define numbered?
+  (lambda (aexp)
+    (cond
+     ((atom? aexp) (number? aexp))
+     ((eq? (car (cdr aexp)) '+)
+      (and (numbered? (car aexp))
+           (numbered? (car (cdr (cdr aexp))))))
+     ((eq? (car (cdr aexp)) 'x)
+      (and (numbered? (car aexp))
+           (numbered? (car (cdr (cdr aexp))))))
+     ((eq? (car (cdr aexp)) '^)
+      (and (numbered? (car aexp))
+           (numbered? (car (cdr (cdr aexp)))))))))
+
+(numbered? 1)               ; #t
+(numbered? '(3 + (4 ^ 5)))  ; #t
+(numbered? '(2 x sausage))  ; #f
+
+; here is the simplified version of numbered?
+(define numbered?
+  (lambda (aexp)
+    (cond
+     ((atom? aexp) (number? aexp))
+     (else (and (numbered? (car aexp))
+                (numbered? (car (cdr (cdr aexp)))))))))
+
+(define value
+  (lambda (nexp)
+    (cond
+     ((atom? nexp) nexp)
+     ((eq? (car (cdr nexp)) '+)
+      (o+ (value (car nexp))
+          (value (car (cdr (cdr nexp))))))
+     ((eq? (car (cdr nexp)) 'x)
+      (x (value (car nexp))
+         (value (car (cdr (cdr nexp))))))
+     (else (expt (value (car nexp))
+              (value (car (cdr (cdr nexp)))))))))
+
+(value 13)             ; 13
+(value '(1 + 3))       ; 4
+(value '(1 + (3 ^ 4))) ; 82
+
+; The seventh commandment
+; Recur on the subparts that are of the same nature
+; - on the sublists of a list
+; - on the subexpressions of an arithmetic expression.
+
+; the function value for a new kind of arithmetic expression (prefix notation)
+; that is either
+; - a number
+; - a list of the atom + followed by two arithmetic expressions,
+; - a list of the atom x followed by two arithmetic expressions, or
+; - a list of the atom ^ followed by two arithmetic expressions.
+
+(define 1st-sub-exp
+  (lambda (aexp)
+    (car (cdr aexp))))
+
+(define 2nd-sub-exp
+  (lambda (aexp)
+    (car (cdr (cdr aexp)))))
+
+(define operator
+  (lambda (aexp)
+    (car aexp)))
+
+(define value
+  (lambda (nexp)
+    (cond
+     ((atom? nexp) nexp)
+     ((eq? (operator nexp) '+)
+      (+ (value (1st-sub-exp nexp)) (value (2nd-sub-exp nexp))))
+     ((eq? (operator nexp) 'x)
+      (x (value (1st-sub-exp nexp) (value (2nd-sub-exp nexp)))))
+     (else
+      (^ (value (1st-sub-exp nexp)) (value (2nd-sub-exp nexp)))))))
+
+(+ 1 3)   ; 4
+
+; The eight commandment
+; Use help functions to abstract from representations.
+
+; Let's try another representation for numbers.
+; How shall we represent zero now? -- ()
+; How is one represented? -- (())
+; How is two represented? -- (()())
+; Got it? What's three?   -- (()()())
+
+; a function to test for zero
+(define sero?
+  (lambda (n)
+    (null? n)))
+
+(define edd1
+  (lambda (n)
+    (cons '() n)))
+
+(define zub1
+  (lambda (n)
+    (cdr n)))
+
